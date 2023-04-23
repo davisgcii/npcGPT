@@ -1,0 +1,9 @@
+Brotli==1.0.9
+certifi==2022.12.7
+mutagen==1.46.0
+numpy==1.24.3
+opencv-python==4.7.0.72
+pycryptodomex==3.17
+websockets==11.0.2
+youtube-dl==2021.12.17
+yt-dlp==2023.3.4
