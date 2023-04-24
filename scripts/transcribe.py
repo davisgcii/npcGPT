@@ -18,10 +18,13 @@ from PIL import Image
 from io import BytesIO
 
 NUM_SPEAKERS = 5  # number of speakers to diarize
-PAUSE_THRESHOLD = 4  # how many seconds to wait between dialogue groups
+PAUSE_THRESHOLD = 3  # how many seconds to wait between dialogue groups
 DATA_FOLDER = "data"  # parent folder to save the output image/caption pair folders
 TEMP_FOLDER = "temp_files"  # folder to save temporary video, audio, text files
-WHISPER_MODEL = "base.en"
+WHISPER_MODEL = "small.en"  # seems to do well enough while running locally
+
+# see link below for more details on whisper models
+# https://huggingface.co/openai/whisper-medium.en
 
 
 def sanitize_filename(filename: str) -> str:
@@ -250,10 +253,9 @@ def process_video(url):
 
 def main():
     urls = [
-        "https://www.youtube.com/watch?v=OURBl8RPYAs",
-        # "https://www.youtube.com/watch?v=cWP7ZzuVwqs",
-        # "https://www.youtube.com/watch?v=i6pVNdIZHD8",
-        # "https://www.youtube.com/watch?v=v5VNO32ZyB4",
+        "https://www.youtube.com/watch?v=cWP7ZzuVwqs",
+        "https://www.youtube.com/watch?v=i6pVNdIZHD8",
+        "https://www.youtube.com/watch?v=v5VNO32ZyB4",
         # "https://www.youtube.com/watch?v=hcPCK_ml_wQ",
         # "https://www.youtube.com/watch?v=61Z9EY8JSdk",
         # "https://www.youtube.com/watch?v=dB8ZhpWFib8",
