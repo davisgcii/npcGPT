@@ -19,8 +19,8 @@ from io import BytesIO
 
 NUM_SPEAKERS = 5  # number of speakers to diarize
 PAUSE_THRESHOLD = 4  # how many seconds to wait between dialogue groups
-DATA_FOLDER = "data"  # folder to save the output
-TEMP_FOLDER = "temp_files"  # folder to save temporary files
+DATA_FOLDER = "data"  # parent folder to save the output image/caption pair folders
+TEMP_FOLDER = "temp_files"  # folder to save temporary video, audio, text files
 
 
 def sanitize_filename(filename: str) -> str:
@@ -95,17 +95,17 @@ def generate_captions(url):
         sanitized_title = sanitize_filename(info["title"])
 
     yt_opts = {
-        "outtmpl": f"./{sanitized_title}.%(ext)s",
+        "outtmpl": f"{TEMP_FOLDER}/{sanitized_title}.%(ext)s",
         "format": "bestvideo[height<=720]+bestaudio/best[height<=720]",
         "merge_output_format": "mp4",
     }
 
     with yt_dlp.YoutubeDL(yt_opts) as ydl:
         ydl.download([video_url])
-        input_file = f"{sanitized_title}.mp4"
+        input_file = f"{TEMP_FOLDER}/{sanitized_title}.mp4"
 
         # Extract audio from video and save as WAV file
-        audio_file = f"{sanitized_title}.wav"
+        audio_file = f"{TEMP_FOLDER}/{sanitized_title}.wav"
         subprocess.run(
             [
                 "ffmpeg",
@@ -127,7 +127,7 @@ def generate_captions(url):
 
         # Save the output
         output_directory = (
-            "."  # Change this to the directory you want to save the output
+            TEMP_FOLDER  # Change this to the directory you want to save the output
         )
         with open(os.path.join(output_directory, f"{sanitized_title}.txt"), "w") as f:
             f.write(output)
@@ -235,16 +235,16 @@ def process_video(url):
     output_folder = f"{DATA_FOLDER}/{video_title}"
 
     create_image_caption_pairs(
-        f"{video_title}.txt",
-        f"{video_title}.mp4",
+        f"{TEMP_FOLDER}/{video_title}.txt",
+        f"{TEMP_FOLDER}/{video_title}.mp4",
         output_folder,
         pause_threshold=PAUSE_THRESHOLD,
     )
 
     # Delete the video and audio files and transcript
-    os.remove(f"{video_title}.txt")
-    os.remove(f"{video_title}.wav")
-    os.remove(f"{video_title}.mp4")
+    os.remove(f"{TEMP_FOLDER}/{video_title}.txt")
+    os.remove(f"{TEMP_FOLDER}/{video_title}.wav")
+    os.remove(f"{TEMP_FOLDER}/{video_title}.mp4")
 
 
 def main():
