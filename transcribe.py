@@ -17,7 +17,7 @@ import subprocess
 from PIL import Image
 from io import BytesIO
 
-NUM_SPEAKERS = 10
+NUM_SPEAKERS = 5
 
 
 def sanitize_filename(filename: str) -> str:
@@ -25,7 +25,7 @@ def sanitize_filename(filename: str) -> str:
 
 
 def transcribe_and_diarize(input_file, num_speakers=NUM_SPEAKERS):
-    model = whisper.load_model("base")
+    model = whisper.load_model("base.en")
     result = model.transcribe(input_file)
     segments = result["segments"]
 
@@ -224,20 +224,55 @@ def create_image_caption_pairs(
         )
 
 
-def main():
-    url = "https://www.youtube.com/watch?v=OURBl8RPYAs"
-
+def process_video(url):
     video_title = generate_captions(url)
     output_folder = f"data/{video_title}"
 
     create_image_caption_pairs(
-        f"{video_title}.txt", f"{video_title}.mp4", output_folder, pause_threshold=2
+        f"{video_title}.txt", f"{video_title}.mp4", output_folder, pause_threshold=3
     )
 
-    # Delete the video and audio files
+    # Delete the video and audio files and transcript
     os.remove(f"{video_title}.txt")
     os.remove(f"{video_title}.wav")
     os.remove(f"{video_title}.mp4")
+
+
+def main():
+    urls = [
+        "https://www.youtube.com/watch?v=OURBl8RPYAs",
+        "https://www.youtube.com/watch?v=cWP7ZzuVwqs",
+        "https://www.youtube.com/watch?v=i6pVNdIZHD8",
+        "https://www.youtube.com/watch?v=v5VNO32ZyB4",
+        "https://www.youtube.com/watch?v=hcPCK_ml_wQ",
+        "https://www.youtube.com/watch?v=61Z9EY8JSdk",
+        "https://www.youtube.com/watch?v=dB8ZhpWFib8",
+        "https://www.youtube.com/watch?v=Cx62-_hFLNM",
+        "https://www.youtube.com/watch?v=Nm6MWYgRe1k",
+        "https://www.youtube.com/watch?v=qIBdGmZJFo4",
+        "https://www.youtube.com/watch?v=ZFwxrI0sz6U",
+        "https://www.youtube.com/watch?v=l_9NDj1vTLw",
+        "https://www.youtube.com/watch?v=-5px2rK0byw",
+        "https://www.youtube.com/watch?v=4x9GaD2HvNc",
+        "https://www.youtube.com/watch?v=aP82ZJ5ZgPk",
+        "https://www.youtube.com/watch?v=HncfYL0d4w0",
+        "https://www.youtube.com/watch?v=l22Mr-ME-iw",
+        "https://www.youtube.com/watch?v=y9lhea-Nqts",
+        "https://www.youtube.com/watch?v=X6cZYwLARRI",
+        "https://www.youtube.com/watch?v=pozB8oJEG0M",
+        "https://www.youtube.com/watch?v=pJvdVAA1pWM",
+        "https://www.youtube.com/watch?v=ire-P7FJhaQ",
+        "https://www.youtube.com/watch?v=VAgoCEMnVJA",
+        "https://www.youtube.com/watch?v=hnwMmMm58fg",
+        "https://www.youtube.com/watch?v=zaWhNBRvEr4",
+        "https://www.youtube.com/watch?v=ApvAbsvQy74",
+    ]
+
+    for url in urls:
+        try:
+            process_video(url)
+        except Exception as e:
+            print(f"Error processing {url}: {e}")
 
 
 if __name__ == "__main__":
