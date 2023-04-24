@@ -3,16 +3,17 @@
 ## Setup
 I'm using venv for the virtual environment. To set up, run:
 
->source venv/bin/activate
->venv> pip install -r requirements.txt
+>`source venv/bin/activate`
+>
+>`venv> pip install -r requirements.txt`
 
 Install new packages using pip:
 
->venv> pip install {package_name}
+>`venv> pip install {package_name}`
 
 And then update `requirements.txt`:
 
->venv> pip freeze > requirements.txt
+>`venv> pip freeze > requirements.txt`
 
 
 ## Data creation
@@ -22,7 +23,7 @@ To transcribe a video, copy the youtube video's url. Make sure to only include t
 
 Paste the video url into the `urls` list at the bottom of `transcribe.py`. Run the script:
 
->venv> python scripts/transcribe.py
+>`venv> python scripts/transcribe.py`
 
 This will download the video to the `temp_files` folder, use ffmpeg to create an audio file, create transcripts of the audio using OpenAI's Whisper (which runs locally), and then uses clustering to assign speakers to each caption based on vocal similarity.
 
