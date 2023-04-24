@@ -17,7 +17,8 @@ import subprocess
 from PIL import Image
 from io import BytesIO
 
-NUM_SPEAKERS = 5
+NUM_SPEAKERS = 5  # number of speakers to diarize
+PAUSE_THRESHOLD = 5  # how many seconds to wait between dialogue groups
 
 
 def sanitize_filename(filename: str) -> str:
@@ -229,7 +230,10 @@ def process_video(url):
     output_folder = f"data/{video_title}"
 
     create_image_caption_pairs(
-        f"{video_title}.txt", f"{video_title}.mp4", output_folder, pause_threshold=3
+        f"{video_title}.txt",
+        f"{video_title}.mp4",
+        output_folder,
+        pause_threshold=PAUSE_THRESHOLD,
     )
 
     # Delete the video and audio files and transcript
