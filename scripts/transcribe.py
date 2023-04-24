@@ -18,7 +18,9 @@ from PIL import Image
 from io import BytesIO
 
 NUM_SPEAKERS = 5  # number of speakers to diarize
-PAUSE_THRESHOLD = 5  # how many seconds to wait between dialogue groups
+PAUSE_THRESHOLD = 4  # how many seconds to wait between dialogue groups
+DATA_FOLDER = "data"  # folder to save the output
+TEMP_FOLDER = "temp_files"  # folder to save temporary files
 
 
 def sanitize_filename(filename: str) -> str:
@@ -134,6 +136,10 @@ def generate_captions(url):
 
 
 def save_image_caption_pair(caption_group, timestamp, video_file, output_folder):
+    # only save captions if there is more than one line of dialogue
+    if len(caption_group) <= 1:
+        return
+
     # Concatenate captions in the group
     caption_text = " ".join(caption_group)
 
@@ -213,8 +219,7 @@ def create_image_caption_pairs(
             last_timestamp = timestamp
             current_speaker = speaker_label  # Update the current speaker
         else:
-            # Add the caption to the current group
-            # Include the speaker label only if it's different from the previous speaker
+            # if there is a line of dialoge, add the caption to the current group
             if line.strip() != "":
                 current_group.append(current_speaker + ": " + line.strip() + "\n")
 
@@ -227,7 +232,7 @@ def create_image_caption_pairs(
 
 def process_video(url):
     video_title = generate_captions(url)
-    output_folder = f"data/{video_title}"
+    output_folder = f"{DATA_FOLDER}/{video_title}"
 
     create_image_caption_pairs(
         f"{video_title}.txt",
@@ -244,32 +249,33 @@ def process_video(url):
 
 def main():
     urls = [
-        "https://www.youtube.com/watch?v=OURBl8RPYAs",
-        "https://www.youtube.com/watch?v=cWP7ZzuVwqs",
-        "https://www.youtube.com/watch?v=i6pVNdIZHD8",
-        "https://www.youtube.com/watch?v=v5VNO32ZyB4",
-        "https://www.youtube.com/watch?v=hcPCK_ml_wQ",
-        "https://www.youtube.com/watch?v=61Z9EY8JSdk",
-        "https://www.youtube.com/watch?v=dB8ZhpWFib8",
-        "https://www.youtube.com/watch?v=Cx62-_hFLNM",
-        "https://www.youtube.com/watch?v=Nm6MWYgRe1k",
-        "https://www.youtube.com/watch?v=qIBdGmZJFo4",
-        "https://www.youtube.com/watch?v=ZFwxrI0sz6U",
-        "https://www.youtube.com/watch?v=l_9NDj1vTLw",
-        "https://www.youtube.com/watch?v=-5px2rK0byw",
-        "https://www.youtube.com/watch?v=4x9GaD2HvNc",
-        "https://www.youtube.com/watch?v=aP82ZJ5ZgPk",
-        "https://www.youtube.com/watch?v=HncfYL0d4w0",
-        "https://www.youtube.com/watch?v=l22Mr-ME-iw",
-        "https://www.youtube.com/watch?v=y9lhea-Nqts",
-        "https://www.youtube.com/watch?v=X6cZYwLARRI",
-        "https://www.youtube.com/watch?v=pozB8oJEG0M",
-        "https://www.youtube.com/watch?v=pJvdVAA1pWM",
-        "https://www.youtube.com/watch?v=ire-P7FJhaQ",
-        "https://www.youtube.com/watch?v=VAgoCEMnVJA",
-        "https://www.youtube.com/watch?v=hnwMmMm58fg",
-        "https://www.youtube.com/watch?v=zaWhNBRvEr4",
-        "https://www.youtube.com/watch?v=ApvAbsvQy74",
+        "https://www.youtube.com/watch?v=vhII1qlcZ4E",
+        # "https://www.youtube.com/watch?v=OURBl8RPYAs",
+        # "https://www.youtube.com/watch?v=cWP7ZzuVwqs",
+        # "https://www.youtube.com/watch?v=i6pVNdIZHD8",
+        # "https://www.youtube.com/watch?v=v5VNO32ZyB4",
+        # "https://www.youtube.com/watch?v=hcPCK_ml_wQ",
+        # "https://www.youtube.com/watch?v=61Z9EY8JSdk",
+        # "https://www.youtube.com/watch?v=dB8ZhpWFib8",
+        # "https://www.youtube.com/watch?v=Cx62-_hFLNM",
+        # "https://www.youtube.com/watch?v=Nm6MWYgRe1k",
+        # "https://www.youtube.com/watch?v=qIBdGmZJFo4",
+        # "https://www.youtube.com/watch?v=ZFwxrI0sz6U",
+        # "https://www.youtube.com/watch?v=l_9NDj1vTLw",
+        # "https://www.youtube.com/watch?v=-5px2rK0byw",
+        # "https://www.youtube.com/watch?v=4x9GaD2HvNc",
+        # "https://www.youtube.com/watch?v=aP82ZJ5ZgPk",
+        # "https://www.youtube.com/watch?v=HncfYL0d4w0",
+        # "https://www.youtube.com/watch?v=l22Mr-ME-iw",
+        # "https://www.youtube.com/watch?v=y9lhea-Nqts",
+        # "https://www.youtube.com/watch?v=X6cZYwLARRI",
+        # "https://www.youtube.com/watch?v=pozB8oJEG0M",
+        # "https://www.youtube.com/watch?v=pJvdVAA1pWM",
+        # "https://www.youtube.com/watch?v=ire-P7FJhaQ",
+        # "https://www.youtube.com/watch?v=VAgoCEMnVJA",
+        # "https://www.youtube.com/watch?v=hnwMmMm58fg",
+        # "https://www.youtube.com/watch?v=zaWhNBRvEr4",
+        # "https://www.youtube.com/watch?v=ApvAbsvQy74",
     ]
 
     for url in urls:

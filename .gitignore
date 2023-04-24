@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# ignore the data folder
+temp_files/
+data/
+
 # Distribution / packaging
 .Python
 build/
