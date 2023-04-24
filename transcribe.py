@@ -1,46 +1,244 @@
-import whisper
-import hashlib
-from pytube import YouTube
-from datetime import timedelta
 import os
+import re
+import whisper
+import yt_dlp
+from whisper.utils import get_writer
+import torch
+import pyannote.audio
+from pyannote.audio.pipelines.speaker_verification import PretrainedSpeakerEmbedding
+from pyannote.audio import Audio
+from pyannote.core import Segment
+from sklearn.cluster import AgglomerativeClustering
+import numpy as np
+import wave
+import contextlib
+import datetime
+import subprocess
+from PIL import Image
+from io import BytesIO
+
+NUM_SPEAKERS = 10
 
 
-def download_video(url):
-    print("Start downloading", url)
-    yt = YouTube(url)
-
-    hash_file = hashlib.md5()
-    hash_file.update(yt.title.encode())
-
-    file_name = f"{hash_file.hexdigest()}.mp4"
-
-    yt.streams.first().download("", file_name)
-    print("Downloaded to", file_name)
-
-    return {"file_name": file_name, "title": yt.title}
+def sanitize_filename(filename: str) -> str:
+    return re.sub(r'[\/:*?"<>|]', "_", filename).replace("：", "_")
 
 
-def transcribe_audio(path):
-    model = whisper.load_model("base.en")  # Change this to your desired model
-    print("Whisper model loaded.")
-    video = download_video(path)
-    transcribe = model.transcribe(video["file_name"])
-    os.remove(video["file_name"])
-    segments = transcribe["segments"]
+def transcribe_and_diarize(input_file, num_speakers=NUM_SPEAKERS):
+    model = whisper.load_model("base")
+    result = model.transcribe(input_file)
+    segments = result["segments"]
 
-    for segment in segments:
-        startTime = str(0) + str(timedelta(seconds=int(segment["start"]))) + ",000"
-        endTime = str(0) + str(timedelta(seconds=int(segment["end"]))) + ",000"
-        text = segment["text"]
-        segmentId = segment["id"] + 1
-        segment = f"{segmentId}\n{startTime} --> {endTime}\n{text[1:] if text[0] is ' ' else text}\n\n"
-
-        srtFilename = os.path.join(r"C:\Transcribe_project", "your_srt_file_name.srt")
-        with open(srtFilename, "a", encoding="utf-8") as srtFile:
-            srtFile.write(segment)
-
-    return srtFilename
+    duration = get_duration(input_file)
+    if len(segments) == 1:
+        segments[0]["speaker"] = "SPEAKER 1"
+    else:
+        embeddings = make_embeddings(input_file, segments, duration)
+        add_speaker_labels(segments, embeddings, num_speakers)
+    output = get_output(segments)
+    return output
 
 
-link = "https://www.youtube.com/watch?v=ImpgxJqwOXM"
-result = transcribe_audio(link)
+def get_duration(path):
+    with contextlib.closing(wave.open(path, "r")) as f:
+        frames = f.getnframes()
+        rate = f.getframerate()
+        return frames / float(rate)
+
+
+def make_embeddings(path, segments, duration):
+    embeddings = np.zeros(shape=(len(segments), 192))
+    embedding_model = PretrainedSpeakerEmbedding(
+        "speechbrain/spkrec-ecapa-voxceleb",
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    )
+    audio = Audio()
+    for i, segment in enumerate(segments):
+        start = segment["start"]
+        end = min(duration, segment["end"])
+        clip = Segment(start, end)
+        waveform, sample_rate = audio.crop(path, clip)
+        embeddings[i] = embedding_model(waveform[None])
+    return np.nan_to_num(embeddings)
+
+
+def add_speaker_labels(segments, embeddings, num_speakers):
+    clustering = AgglomerativeClustering(num_speakers).fit(embeddings)
+    labels = clustering.labels_
+    for i in range(len(segments)):
+        segments[i]["speaker"] = "SPEAKER " + str(labels[i] + 1)
+
+
+def time(secs):
+    return datetime.timedelta(seconds=round(secs))
+
+
+def get_output(segments):
+    output = ""
+    for i, segment in enumerate(segments):
+        if i == 0 or segments[i - 1]["speaker"] != segment["speaker"]:
+            if i != 0:
+                output += "\n\n"
+            output += segment["speaker"] + " " + str(time(segment["start"])) + "\n\n"
+        output += segment["text"][1:] + " "
+    return output
+
+
+def generate_captions(url):
+    video_url = url
+
+    with yt_dlp.YoutubeDL() as ydl:
+        info = ydl.extract_info(video_url, download=False)
+        sanitized_title = sanitize_filename(info["title"])
+
+    yt_opts = {
+        "outtmpl": f"./{sanitized_title}.%(ext)s",
+        "format": "bestvideo[height<=720]+bestaudio/best[height<=720]",
+        "merge_output_format": "mp4",
+    }
+
+    with yt_dlp.YoutubeDL(yt_opts) as ydl:
+        ydl.download([video_url])
+        input_file = f"{sanitized_title}.mp4"
+
+        # Extract audio from video and save as WAV file
+        audio_file = f"{sanitized_title}.wav"
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-i",
+                input_file,
+                "-vn",
+                "-acodec",
+                "pcm_s16le",
+                "-ar",
+                "16000",
+                "-ac",
+                "1",
+                audio_file,
+            ]
+        )
+
+        # Transcribe and diarize the audio
+        output = transcribe_and_diarize(audio_file, num_speakers=NUM_SPEAKERS)
+
+        # Save the output
+        output_directory = (
+            "."  # Change this to the directory you want to save the output
+        )
+        with open(os.path.join(output_directory, f"{sanitized_title}.txt"), "w") as f:
+            f.write(output)
+
+        return sanitized_title
+
+
+def save_image_caption_pair(caption_group, timestamp, video_file, output_folder):
+    # Concatenate captions in the group
+    caption_text = " ".join(caption_group)
+
+    # Extract image still from the video
+    image_data = subprocess.check_output(
+        [
+            "ffmpeg",
+            "-ss",
+            str(timestamp),
+            "-i",
+            video_file,
+            "-vframes",
+            "1",
+            "-f",
+            "image2pipe",
+            "-",
+        ]
+    )
+    image = Image.open(BytesIO(image_data))
+
+    # Save the image
+    image_filename = os.path.join(output_folder, f"image_{timestamp}.png")
+    image.save(image_filename)
+
+    # Save the caption
+    caption_filename = os.path.join(output_folder, f"caption_{timestamp}.txt")
+    with open(caption_filename, "w") as f:
+        f.write(caption_text)
+
+
+def create_image_caption_pairs(
+    output_txt, video_file, output_folder, pause_threshold=2
+):
+    # Create the output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Parse the output text file
+    with open(output_txt, "r") as f:
+        lines = f.readlines()
+
+    # Variables to keep track of current group of captions
+    current_group = []
+    current_timestamp = None
+    last_timestamp = None
+    current_speaker = ""  # Initialize the current_speaker variable
+
+    # Iterate through the lines in the output text file
+    for line in lines:
+        # Match speaker lines (e.g., "SPEAKER 2 0:00:00")
+        speaker_match = re.match(r"(SPEAKER \d+) (\d+:\d+:\d+)", line)
+        if speaker_match:
+            speaker_label = speaker_match.group(1)
+            timestamp_str = speaker_match.group(2)
+            timestamp = sum(
+                int(x) * 60**i
+                for i, x in enumerate(reversed(timestamp_str.split(":")))
+            )
+
+            # Initialize current_timestamp if it's the first speaker line
+            if current_timestamp is None:
+                current_timestamp = timestamp
+
+            # Check if the pause between captions is greater than the threshold
+            if (
+                last_timestamp is not None
+                and (timestamp - last_timestamp) > pause_threshold
+            ):
+                # Save the current group of captions and extract the corresponding image still
+                save_image_caption_pair(
+                    current_group, current_timestamp, video_file, output_folder
+                )
+
+                # Start a new group of captions
+                current_group = []
+                current_timestamp = timestamp  # Update the current timestamp
+
+            last_timestamp = timestamp
+            current_speaker = speaker_label  # Update the current speaker
+        else:
+            # Add the caption to the current group
+            # Include the speaker label only if it's different from the previous speaker
+            if line.strip() != "":
+                current_group.append(current_speaker + ": " + line.strip() + "\n")
+
+    # Save the last group of captions
+    if current_group:
+        save_image_caption_pair(
+            current_group, current_timestamp, video_file, output_folder
+        )
+
+
+def main():
+    url = "https://www.youtube.com/watch?v=OURBl8RPYAs"
+
+    video_title = generate_captions(url)
+    output_folder = f"data/{video_title}"
+
+    create_image_caption_pairs(
+        f"{video_title}.txt", f"{video_title}.mp4", output_folder, pause_threshold=2
+    )
+
+    # Delete the video and audio files
+    os.remove(f"{video_title}.txt")
+    os.remove(f"{video_title}.wav")
+    os.remove(f"{video_title}.mp4")
+
+
+if __name__ == "__main__":
+    main()
