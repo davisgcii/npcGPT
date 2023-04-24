@@ -21,7 +21,7 @@ And then update `requirements.txt`:
 
 To transcribe a video, copy the youtube video's url. Make sure to only include the base url and video id; don't include any query string parameters (e.g., `https://www.youtube.com/watch?v=vhII1qlcZ4E&t=7s` includes an unwanted `&t=7s` parameters).
 
-Paste the video url into the `urls` list at the bottom of `transcribe.py`. Run the script:
+Paste the video url into the `urls` list in `main()` at the bottom of `transcribe.py`. Run the script:
 
 >`venv> python scripts/transcribe.py`
 
