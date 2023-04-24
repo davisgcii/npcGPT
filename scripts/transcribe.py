@@ -18,7 +18,7 @@ from PIL import Image
 from io import BytesIO
 
 NUM_SPEAKERS = 5  # number of speakers to diarize
-PAUSE_THRESHOLD = 5  # how many seconds to wait between dialogue groups
+PAUSE_THRESHOLD = 4  # how many seconds to wait between dialogue groups
 DATA_FOLDER = "data"  # parent folder to save the output image/caption pair folders
 TEMP_FOLDER = "temp_files"  # folder to save temporary video, audio, text files
 WHISPER_MODEL = "base.en"
