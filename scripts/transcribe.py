@@ -253,13 +253,8 @@ def process_video(url):
 
 def main():
     urls = [
-        "https://www.youtube.com/watch?v=l22Mr-ME-iw",
-        "https://www.youtube.com/watch?v=y9lhea-Nqts",
-        "https://www.youtube.com/watch?v=X6cZYwLARRI",
-        # "https://www.youtube.com/watch?v=pozB8oJEG0M",
-        # "https://www.youtube.com/watch?v=pJvdVAA1pWM",
-        # "https://www.youtube.com/watch?v=ire-P7FJhaQ",
-        # "https://www.youtube.com/watch?v=VAgoCEMnVJA",
+        "https://www.youtube.com/watch?v=ire-P7FJhaQ",  # delete these two
+        "https://www.youtube.com/watch?v=VAgoCEMnVJA",
         # "https://www.youtube.com/watch?v=hnwMmMm58fg",
         # "https://www.youtube.com/watch?v=zaWhNBRvEr4",
         # "https://www.youtube.com/watch?v=ApvAbsvQy74",
