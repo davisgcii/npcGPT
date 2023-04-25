@@ -18,7 +18,7 @@ from PIL import Image
 from io import BytesIO
 
 NUM_SPEAKERS = 5  # number of speakers to diarize
-PAUSE_THRESHOLD = 3  # how many seconds to wait between dialogue groups
+PAUSE_THRESHOLD = 3.5  # how many seconds to wait between dialogue groups
 DATA_FOLDER = "data"  # parent folder to save the output image/caption pair folders
 TEMP_FOLDER = "temp_files"  # folder to save temporary video, audio, text files
 WHISPER_MODEL = "small.en"  # seems to do well enough while running locally
@@ -253,11 +253,8 @@ def process_video(url):
 
 def main():
     urls = [
-        "https://www.youtube.com/watch?v=ire-P7FJhaQ",  # delete these two
-        "https://www.youtube.com/watch?v=VAgoCEMnVJA",
-        # "https://www.youtube.com/watch?v=hnwMmMm58fg",
-        # "https://www.youtube.com/watch?v=zaWhNBRvEr4",
-        # "https://www.youtube.com/watch?v=ApvAbsvQy74",
+        "https://www.youtube.com/watch?v=gxrzE0vk2kE",
+        "https://www.youtube.com/watch?v=0VPdIQci7Wc",
     ]
 
     for url in urls:
