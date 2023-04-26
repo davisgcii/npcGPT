@@ -253,8 +253,19 @@ def process_video(url):
 
 def main():
     urls = [
-        "https://www.youtube.com/watch?v=gxrzE0vk2kE",
-        "https://www.youtube.com/watch?v=0VPdIQci7Wc",
+        "https://www.youtube.com/watch?v=RK-1XXDdOgA",
+        "https://www.youtube.com/watch?v=2k7CREr2ljg",
+        "https://www.youtube.com/watch?v=eys8pEF-4QU",
+        "https://www.youtube.com/watch?v=6aLGvZ-NHeI",
+        "https://www.youtube.com/watch?v=f5Weajofbr0",
+        "https://www.youtube.com/watch?v=6YRoGSlcDqM",
+        "https://www.youtube.com/watch?v=RisgpZ1GBjQ",
+        "https://www.youtube.com/watch?v=3a1j6g6O_uM",
+        "https://www.youtube.com/watch?v=Z0RuGNcLzAg",
+        "https://www.youtube.com/watch?v=AglOa1GjBD0",
+        "https://www.youtube.com/watch?v=6QQxYt2ElVY",
+        "https://www.youtube.com/watch?v=OKZEf0rTndM",
+        "https://www.youtube.com/watch?v=lgL8lgz8DjI",
     ]
 
     for url in urls:

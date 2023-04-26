@@ -46,4 +46,13 @@ urls = [
         "https://www.youtube.com/watch?v=-hXvs8nDl1o",
         "https://www.youtube.com/watch?v=KNL7KpzBvOY",
         "https://www.youtube.com/watch?v=8QBGQjWiRqU",
+        "https://www.youtube.com/watch?v=gxrzE0vk2kE",
+        "https://www.youtube.com/watch?v=0VPdIQci7Wc",
+        "https://www.youtube.com/watch?v=UCYHJg_g-PY",
+        "https://www.youtube.com/watch?v=UCYHJg_g-PY",
+
+        "https://www.youtube.com/watch?v=6xEh5ABGAIc",
+        "https://www.youtube.com/watch?v=og9r-RSR0d4",
+        "https://www.youtube.com/watch?v=WmPp63vq_Gk",
+        "https://www.youtube.com/watch?v=OtBfbJsxhcI",
     ]
