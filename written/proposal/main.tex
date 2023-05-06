@@ -1,0 +1,97 @@
+\documentclass{article}
+
+\usepackage[final]{neurips_2019}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{lipsum}
+\usepackage{amsmath}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+\usepackage{xcolor}
+\hypersetup{
+    colorlinks,
+    linkcolor={blue},
+    citecolor={blue},
+    urlcolor={blue}
+}
+\newcommand{\note}[1]{\textcolor{blue}{{#1}}}
+
+\title{
+  Multi-Modal Model To Generate Conversations Using Visual Context \\
+  \vspace{1em}
+}
+
+\author{
+  Shoaib Mohammed \\
+  Department of Computer Science \\
+  Stanford University \\
+  \texttt{shoaibmh@stanford.edu} \\
+  \And
+  Saumya Goyal \\
+  Department of Computer Science \\
+  Stanford University \\
+  \texttt{saumg@stanford.edu} \\
+  \And
+  George Davis \\
+  Graduate School of Business \\
+  Stanford University \\
+  \texttt{gcdavis@stanford.edu} \\
+}
+
+% The project proposal should be one paragraph (200-400 words). Your project proposal should describe:
+
+% What is the problem that you will be investigating? Why is it interesting?
+% What reading will you examine to provide context and background?
+% What data will you use? If you are collecting new data, how will you do it?
+% What method or algorithm are you proposing? If there are existing implementations, will you use them and how? How do you plan to improve or modify such implementations? You don't have to have an exact answer at this point, but you should have a general sense of how you will approach the problem you are working on.
+% How will you evaluate your results? Qualitatively, what kind of results do you expect (e.g. plots or figures)? Quantitatively, what kind of analysis will you use to evaluate and/or compare your results (e.g. what performance metrics or statistical tests)?
+
+\begin{document}
+
+\maketitle
+
+We are going to build a multi-modal model for generating conversational responses using visual and text input. This has a multi-fold inspiration and possible end cases. One of these is to make non-player character (NPC) dialogue in games more human-like to improve the game playing experience by providing them both textual (dialogue) and image (from their in-game surroundings) context. Another use-case is to make robots act more socially. For example, a robot in a hospital can take visual and speech inputs from patients and respond similar to how a hospital attendant would. The applications to robotics are inspired from PaLM-E which was recently released by Google that is able to consider visual, text, and robot actions at the same time. 
+
+In terms of literature survey, we plan to read the following papers:
+\begin{itemize}
+    \itemsep-0.2em
+    \item PaLM-E: An Embodied Multimodal Language Model 
+    \cite{driess2023palme}
+    \item OpenViDial 2.0: A Larger-Scale, Open-Domain Dialogue Generation Dataset with Visual Contexts \cite{wang2021openvidial}
+    \item Image-Chat: Engaging Grounded Conversations \cite{shuster2020image}
+    \item Multimodal Learning with Transformers: A Survey \cite{xu2022multimodal}
+\end{itemize}
+
+We will be using the Engaging Image Chat: Modeling Personality in Grounded Dialogue dataset released by ParlAI \cite{shuster2020image}. ImageChat consists of 202k dialogues, 401k utterances, and over 202k images. We also plan to focus on video game characters such as NPCs. However, there is limited availability of datasets for visual-based conversations. For this reason, we plan to manually scrape “No Commentary” game videos from YouTube.
+
+We wish to use the training methodology of PaLM-E to modify language models to consider visual input for the conversational tasks we are considering. In particular, we will be working on the GPT-2 implementation, \href{https://github.com/karpathy/nanoGPT}{nanoGPT}. PaLM \cite{chowdhery2022palm} is a large language model and PaLM-E uses it by combining sensor information from a robotic agent. We will build encoders that map inputs such as an image representing visual context and a conversation to word token embeddings needed for nanoGPT.
+
+The model performance can be evaluated using two approaches:
+Accuracy score on the test dataset.
+Pearson correlation or cosine similarity as an index to get the similarity measure of the generated output with the test dataset.
+
+We also plan to analyze further by generating responses for NPC characters by feeding visual context and user conversation as input.
+
+In conclusion, our goal of building a multi-modal model that has human-like conversations based on visual context will be able to combine information about the environment making it capable of handling complex tasks.
+
+\newpage
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+% \appendix
+
+% \section{Appendix (optional)}
+% If you wish, you can include an appendix, which should be part of the main PDF, and does not count towards the 6-8 page limit.
+% Appendices can be useful to supply extra details, examples, figures, results, visualizations, etc., that you couldn't fit into the main paper. However, your grader \textit{does not} have to read your appendix, and you should assume that you will be graded based on the content of the main part of your paper only.
+
+\end{document}
+
