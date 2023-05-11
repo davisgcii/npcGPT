@@ -18,7 +18,7 @@ from PIL import Image
 from io import BytesIO
 
 NUM_SPEAKERS = 5  # number of speakers to diarize
-PAUSE_THRESHOLD = 3.5  # how many seconds to wait between dialogue groups
+PAUSE_THRESHOLD = 2.5  # how many seconds to wait between dialogue groups
 DATA_FOLDER = "data"  # parent folder to save the output image/caption pair folders
 TEMP_FOLDER = "temp_files"  # folder to save temporary video, audio, text files
 WHISPER_MODEL = "small.en"  # seems to do well enough while running locally
@@ -264,6 +264,7 @@ def main():
     playlist_url = (
         "https://www.youtube.com/playlist?list=PLgPhYhf1rAvFSc8gDS4BYy6_DJXwXj7G7"
     )
+
     urls = get_urls_from_playlist(playlist_url)
     print(f"Processing playlist. There are {len(urls)} videos.")
 
