@@ -83,4 +83,7 @@ urls = [
         "https://www.youtube.com/watch?v=eCaPXOkkuBY",
         "https://www.youtube.com/watch?v=TRUfZUS5MNE",
         "https://www.youtube.com/watch?v=7LdYhTfq2go",
+
+        "https://www.youtube.com/playlist?list=PLgPhYhf1rAvFSc8gDS4BYy6_DJXwXj7G7",
+        
     ]

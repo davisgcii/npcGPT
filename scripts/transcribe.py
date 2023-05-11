@@ -261,9 +261,7 @@ def get_urls_from_playlist(url: str) -> list:
 
 
 def main():
-    playlist_url = (
-        "https://www.youtube.com/playlist?list=PLgPhYhf1rAvFSc8gDS4BYy6_DJXwXj7G7"
-    )
+    playlist_url = ()
 
     urls = get_urls_from_playlist(playlist_url)
     print(f"Processing playlist. There are {len(urls)} videos.")
