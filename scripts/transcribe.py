@@ -251,8 +251,21 @@ def process_video(url):
     os.remove(f"{TEMP_FOLDER}/{video_title}.mp4")
 
 
+def get_urls_from_playlist(url: str) -> list:
+    ydl_opts = {"extract_flat": True, "quiet": False}
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        # print(info)
+        return [entry["url"] for entry in info["entries"]]
+
+
 def main():
-    urls = []
+    playlist_url = (
+        "https://www.youtube.com/playlist?list=PLgPhYhf1rAvFSc8gDS4BYy6_DJXwXj7G7"
+    )
+    urls = get_urls_from_playlist(playlist_url)
+    print(f"Processing playlist. There are {len(urls)} videos.")
 
     for url in urls:
         try:
