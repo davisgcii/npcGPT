@@ -53,6 +53,10 @@ def process(example):
 	prompt_ids.append(enc.eot_token) # add the end of question token, e.g. 50256 for gpt2 bpe
 	answer_ids.append(enc.eot_token) # add the end of question token, e.g. 50256 for gpt2 bpe
 	
+	# convert to numpy arrays
+	prompt_ids = np.array(prompt_ids)
+	answer_ids = np.array(answer_ids)
+	
 	# get the image features from the vision transformer model
 	image_path = os.path.join(images_path, image_name)
 	if image_path not in image_paths:
@@ -93,16 +97,17 @@ with open(os.path.join(data_path, 'train.json')) as f:
 num_proc = 8
 
 # memory maps used to save processed data
-queries_memmap = np.memmap('queries.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), 160))
-features_memmap = np.memmap('features.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), 1000))
-answers_memmap = np.memmap('answers.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), 160))
+seq_len, features_len = 160, 1000
+queries_memmap = np.memmap('queries.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), seq_len))
+features_memmap = np.memmap('features.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), features_len))
+answers_memmap = np.memmap('answers.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), seq_len))
 
 for idx, example in enumerate(raw_train):
 	queries, features, answers = process(example)
 	
 	# save the data into the memory map
-	queries_memmap[idx] = queries
-	answers_memmap[idx] = answers
+	queries_memmap[idx] = np.pad(queries, (0, seq_len - queries.shape[0]), 'constant')
+	answers_memmap[idx] = np.pad(answers, (0, seq_len - answers.shape[0]), 'constant')
 	
 	if isinstance(features, int):
 		print(f'Ran into an error for example {idx + 1}.')
