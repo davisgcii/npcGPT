@@ -16,19 +16,13 @@ data_path = '/opt/conda/envs/pytorch/lib/python3.9/site-packages/data/image_chat
 print(f'Found {len(image_paths)} images in the YFCC dataset.')
 
 # load the pretrained vision transformer models
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 feature_extractor = ViTFeatureExtractor.from_pretrained('google/vit-base-patch16-224')
 vit_model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224')
+vit_model.to(device)
 
 # we now want to tokenize the dataset. first define the encoding function (gpt2 bpe)
 enc = tiktoken.get_encoding("gpt2")
-
-# # tokenize the dataset
-# tokenized = split_dataset.map(
-#     process,
-#     remove_columns=['text'],
-#     desc="tokenizing the splits",
-#     num_proc=num_proc,
-# )
 
 # a helper function to process each example
 def process(example):
@@ -64,29 +58,30 @@ def process(example):
 		image_features = 0
 	else:
 		image = Image.open(image_path)
-		normalized_pixels = feature_extractor(images=image, return_tensors="pt")
+		
+		# make sure we are using the right image mode
+		rgb_mode = 'RGB'
+		if image.mode != rgb_mode:
+			print(f'Found image mode {image.mode}, converting to mode {rgb_mode}.')
+			image = image.convert(rgb_mode)
+		
+		normalized_pixels = feature_extractor(images=image, return_tensors="pt").to(device)
 		outputs = vit_model(**normalized_pixels)
 		image_features = outputs.logits
 
 	return (prompt_ids, image_features, answer_ids)
 
-# # concatenate all the ids in each dataset into one large file we can use for training
-# for split, dset in tokenized.items():
-#     arr_len = np.sum(dset['len'])
-#     filename = os.path.join(os.path.dirname(__file__), f'{split}.bin')
-#     dtype = np.uint16 # (can do since enc.max_token_value == 50256 is < 2**16)
-#     arr = np.memmap(filename, dtype=dtype, mode='w+', shape=(arr_len,))
-#     total_batches = 1024
-	
-#     idx = 0
-#     for batch_idx in tqdm(range(total_batches), desc=f'writing {filename}'):
-#         # Batch together samples for faster write
-#         batch = dset.shard(num_shards=total_batches, index=batch_idx, contiguous=True).with_format('numpy')
-#         arr_batch = np.concatenate(batch['ids'])
-#         # Write into mmap
-#         arr[idx : idx + len(arr_batch)] = arr_batch
-#         idx += len(arr_batch)
-#     arr.flush()
+# initial logs for GPU/CPU information
+print('Using device:', device)
+print()
+
+# additional info when using cuda
+if device.type == 'cuda':
+	print('Device name: ', torch.cuda.get_device_name(0))
+	print('Memory Usage:')
+	print('Allocated:', round(torch.cuda.memory_allocated(0) / 1024**3, 1), 'GB')
+	print('Cached:   ', round(torch.cuda.memory_reserved(0)  / 1024**3, 1), 'GB')
+	print()
 
 # read the raw training data
 with open(os.path.join(data_path, 'train.json')) as f:
@@ -112,10 +107,10 @@ for idx, example in enumerate(raw_train):
 	if isinstance(features, int):
 		print(f'Ran into an error for example {idx + 1}.')
 	else:
-		features_memmap[idx] = features.detach().numpy()
+		features_memmap[idx] = features.cpu().detach().numpy()
 	
 	# log output every 10-iterations and also flush output into the memory map
-	if idx % 10 == 0:
+	if idx % 100 == 0:
 		print(f'Processed {idx + 1} out of {len(raw_train)} examples.')
 		features_memmap.flush()
 
