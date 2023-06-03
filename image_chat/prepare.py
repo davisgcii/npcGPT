@@ -85,21 +85,24 @@ def process(example):
 def prepare(split, truncate=False):
 	print(f'Processing the data split {split} with truncate set to {truncate}...')
 	
-	# create an empty folder to store the data for the given split
-	os.makedirs(split, exist_ok=True)
-	
 	# read the raw training data
 	with open(os.path.join(data_path, f'{split}.json')) as f:
 		raw_train = json.load(f)
+
+	base_path = f"{split}"
 	
 	# truncate data to a 100 values if Flag is True
 	if truncate:
 		raw_train = raw_train[:100]
+		base_path += "-truncated"
+	
+	# create an empty folder to store the data for the given split
+	os.makedirs(base_path, exist_ok=True)
 
 	# memory maps used to save processed data
-	queries_memmap = np.memmap(f'{split}/queries.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), seq_len))
-	answers_memmap = np.memmap(f'{split}/answers.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), seq_len))
-	features_memmap = np.memmap(f'{split}/features.bin', dtype=np.float64, mode='w+', shape=(len(raw_train), features_len))
+	queries_memmap = np.memmap(f'{base_path}/queries.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), seq_len))
+	answers_memmap = np.memmap(f'{base_path}/answers.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), seq_len))
+	features_memmap = np.memmap(f'{base_path}/features.bin', dtype=np.float64, mode='w+', shape=(len(raw_train), features_len))
 
 	for idx, example in enumerate(raw_train):
 		query, features, answer = process(example)
