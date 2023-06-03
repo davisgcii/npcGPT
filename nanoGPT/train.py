@@ -111,22 +111,42 @@ ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torc
 ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
 
 # poor man's data loader
-data_dir = os.path.join('data', dataset)
-train_data = np.memmap(os.path.join(data_dir, 'train.bin'), dtype=np.uint16, mode='r')
-val_data = np.memmap(os.path.join(data_dir, 'val.bin'), dtype=np.uint16, mode='r')
+data_dir = '/home/ubuntu/image_chat/image_chat/'
+train_dir = os.path.join(data_dir, 'train')
+val_dir = os.path.join(data_dir, 'valid')
+test_dir = os.path.join(data_dir, 'test')
+train_q = np.memmap(os.path.join(train_dir, 'queries.bin'), dtype=np.uint16, mode='r')
+train_f = np.memmap(os.path.join(train_dir, 'features.bin'), dtype=np.float32, mode='r')
+train_a = np.memmap(os.path.join(train_dir, 'answers.bin'), dtype=np.uint16, mode='r')
+train_no_ex = train_q.shape[0]
 
-# TODO: make it return X, img, Y
+val_q = np.memmap(os.path.join(val_dir, 'queries.bin'), dtype=np.uint16, mode='r')
+val_f = np.memmap(os.path.join(val_dir, 'features.bin'), dtype=np.float32, mode='r')
+val_a = np.memmap(os.path.join(val_dir, 'answers.bin'), dtype=np.uint16, mode='r')
+val_no_ex = val_q.shape[0]
+
+
+# train_data = np.memmap(os.path.join(data_dir, 'train.bin'), dtype=np.uint16, mode='r')
+# val_data = np.memmap(os.path.join(data_dir, 'val.bin'), dtype=np.uint16, mode='r')
+
 def get_batch(split):
-    data = train_data if split == 'train' else val_data
-    ix = torch.randint(len(data) - block_size, (batch_size,))
-    x = torch.stack([torch.from_numpy((data[i:i+block_size]).astype(np.int64)) for i in ix])
-    y = torch.stack([torch.from_numpy((data[i+1:i+1+block_size]).astype(np.int64)) for i in ix])
+    qs = train_q if split == 'train' else val_q
+    fs = train_f if split == 'train' else val_f
+    ans = train_a if split == 'train' else val_a
+    no_ex = train_no_ex if split == 'train' else val_no_ex
+
+    ix = torch.randint(train_no_ex, (batch_size,))
+
+    x = torch.stack([torch.from_numpy((qs[i]).astype(np.int64)) for i in ix])
+    y = torch.stack([torch.from_numpy((qs[i][1:]).astype(np.int64)) for i in ix])
+    img = torch.stack([torch.from_numpy((fs[i]).astype(np.float32)) for i in ix])
+
     if device_type == 'cuda':
         # pin arrays x,y, which allows us to move them to GPU asynchronously (non_blocking=True)
-        x, y = x.pin_memory().to(device, non_blocking=True), y.pin_memory().to(device, non_blocking=True)
+        x, img, y = x.pin_memory().to(device, non_blocking=True), img.pin_memory().to(device, non_blocking=True), y.pin_memory().to(device, non_blocking=True)
     else:
         x, y = x.to(device), y.to(device)
-    return x, y
+    return x, img, y
 
 # init these up here, can override if init_from='resume' (i.e. from a checkpoint)
 iter_num = 0
