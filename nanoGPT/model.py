@@ -209,16 +209,25 @@ class GPT(nn.Module):
         # forward the GPT model itself
         # tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (1, t, n_embd)
+        # print("b4 drop:", x)
         x = self.transformer.drop(tok_emb + pos_emb)
+        print("b4 h:", x)
         for block in self.transformer.h:
             x = block(x)
+        print("b4 trans:", x)
         x = self.transformer.ln_f(x)
 
         if targets is not None:
             # if we are given some desired targets also calculate the loss
+            print("x:", x)
             logits = self.lm_head(x)
-            # add [1:] to not compute loss on predicting image
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1))[1:], targets.view(-1)[1:], ignore_index=-1)
+            # print(logits)
+            # print(targets)
+            # print(f"{logits.shape=}")
+            # print(f"{targets.shape=}")
+            # TODO: add [1:] to not compute loss on predicting image
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
+            print(loss)
         else:
             # inference-time mini-optimization: only forward the lm_head on the very last position
             logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
@@ -372,9 +381,9 @@ class npcGPT(nn.Module):
         self.gpt = GPT(config)
         self.vit_enc = nn.Linear(vit_dim, config.n_embd)
 
-        torch.nn.init.xavier_uniform(vit_enc.weight)
+        torch.nn.init.xavier_uniform(self.vit_enc.weight)
 
-        print("number of parameters for linear layer = ", self.vit_enc.numel())
+        print("number of parameters for linear layer = ", list(self.vit_enc.parameters())[0].numel())
 
     @classmethod
     def from_pretrained(cls, vit_dim, model_type, override_args=None):
@@ -416,13 +425,20 @@ class npcGPT(nn.Module):
         # assert t <= self.config.block_size, f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
         # pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0) # shape (1, t)
 
+
+        print(f"{img=}")
+        print(f"{self.vit_enc.weight=}")
+        print(f"{img@self.vit_enc.weight=}")
+        # print(f"{self.vit_enc.bias=}")
         img_id = self.vit_enc(img)
+        print("img_id:", img_id)
 
         # forward the GPT model itself
         tok_emb = self.gpt.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
 
         # add img at index 1. TODO: check this
         tok_emb[:, 1, :] = img_id
+        # print("tok_emb: ", tok_emb[:,1,:])
 
         return self.gpt.forward_from_emb(idx, tok_emb, targets)
 
