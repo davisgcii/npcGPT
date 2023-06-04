@@ -102,7 +102,7 @@ def prepare(split, truncate=False):
 	# memory maps used to save processed data
 	queries_memmap = np.memmap(f'{base_path}/queries.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), seq_len))
 	answers_memmap = np.memmap(f'{base_path}/answers.bin', dtype=np.uint16, mode='w+', shape=(len(raw_train), seq_len))
-	features_memmap = np.memmap(f'{base_path}/features.bin', dtype=np.float64, mode='w+', shape=(len(raw_train), features_len))
+	features_memmap = np.memmap(f'{base_path}/features.bin', dtype=np.float32, mode='w+', shape=(len(raw_train), features_len))
 
 	for idx, example in enumerate(raw_train):
 		query, features, answer = process(example)
