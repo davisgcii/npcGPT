@@ -211,29 +211,42 @@ class GPT(nn.Module):
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (1, t, n_embd)
         # print("b4 drop:", x)
         x = self.transformer.drop(tok_emb + pos_emb)
-        print("b4 h:", x)
+        # print("b4 h:", x)
         for block in self.transformer.h:
             x = block(x)
-        print("b4 trans:", x)
+        # print("b4 trans:", x)
         x = self.transformer.ln_f(x)
+
 
         if targets is not None:
             # if we are given some desired targets also calculate the loss
-            print("x:", x)
+            # print("x:", x)
             logits = self.lm_head(x)
+            preds = torch.argmax(logits, dim = 2)
             # print(logits)
             # print(targets)
+
+            # add [1:] to not compute loss on predicting image
             # print(f"{logits.shape=}")
+            new_logits = logits[:,1:]
+            # print(f"{new_logits.shape=}")
             # print(f"{targets.shape=}")
-            # TODO: add [1:] to not compute loss on predicting image
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
-            print(loss)
+            new_targets = targets[:, 1:]
+            # print(f"{new_targets.shape=}")
+            # print(f"{preds.shape=}")
+            new_preds = preds[:,1:]
+            # print(f"{new_preds.shape=}")
+
+            loss = F.cross_entropy(new_logits.reshape(-1, new_logits.size(-1)), new_targets.reshape(-1), ignore_index=-1)
+            acc = torch.sum((new_preds == new_targets)).item()/(new_targets.shape[0]*new_targets.shape[1])
+            # print(loss)
         else:
             # inference-time mini-optimization: only forward the lm_head on the very last position
             logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
             loss = None
+            acc = None
 
-        return logits, loss
+        return logits, loss, acc
 
     def crop_block_size(self, block_size):
         # model surgery to decrease the block size if necessary
@@ -380,6 +393,7 @@ class npcGPT(nn.Module):
 
         self.gpt = GPT(config)
         self.vit_enc = nn.Linear(vit_dim, config.n_embd)
+        print(f"{vit_dim=}")
 
         torch.nn.init.xavier_uniform(self.vit_enc.weight)
 
@@ -426,12 +440,13 @@ class npcGPT(nn.Module):
         # pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0) # shape (1, t)
 
 
-        print(f"{img=}")
-        print(f"{self.vit_enc.weight=}")
-        print(f"{img@self.vit_enc.weight=}")
+        # print(f"{img=}")
+        # print(f"{self.vit_enc.weight=}")
+        # print(f"{img@self.vit_enc.weight=}")
         # print(f"{self.vit_enc.bias=}")
+        # print(f"{img.shape=}")
         img_id = self.vit_enc(img)
-        print("img_id:", img_id)
+        # print("img_id:", img_id)
 
         # forward the GPT model itself
         tok_emb = self.gpt.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
@@ -459,6 +474,9 @@ class npcGPT(nn.Module):
         #     loss = None
 
         # return logits, loss
+
+    def estimate_mfu(self, fwdbwd_per_iter, dt):
+        return self.gpt.estimate_mfu(fwdbwd_per_iter, dt)
 
 
 
