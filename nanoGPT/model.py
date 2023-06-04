@@ -203,12 +203,16 @@ class GPT(nn.Module):
     def forward_from_emb(self, idx, tok_emb, targets=None):
         device = idx.device
         b, t = idx.size()
+        # print(f"{t=}")
         assert t <= self.config.block_size, f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
         pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0) # shape (1, t)
+
+        # print(f"{pos.shape=}")
 
         # forward the GPT model itself
         # tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (1, t, n_embd)
+        # print(f"{pos_emb.shape=}")
         # print("b4 drop:", x)
         x = self.transformer.drop(tok_emb + pos_emb)
         # print("b4 h:", x)
@@ -451,7 +455,7 @@ class npcGPT(nn.Module):
         # forward the GPT model itself
         tok_emb = self.gpt.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
 
-        # add img at index 1. TODO: check this
+        # add img at index 1
         tok_emb[:, 1, :] = img_id
         # print("tok_emb: ", tok_emb[:,1,:])
 
@@ -477,6 +481,35 @@ class npcGPT(nn.Module):
 
     def estimate_mfu(self, fwdbwd_per_iter, dt):
         return self.gpt.estimate_mfu(fwdbwd_per_iter, dt)
+
+
+    @torch.no_grad()
+    def generate(self, idx, img, max_new_tokens, temperature=1.0, top_k=None):
+        img_id = self.vit_enc(img)
+        tok_emb = self.gpt.transformer.wte(idx)
+
+        # print(f"{tok_emb.shape=}")
+        # print(f"{idx.shape=}")
+
+        tok_emb[:, 1, :] = img_id
+
+        for _ in range(max_new_tokens):
+            logits, _, _ = self.gpt.forward_from_emb(idx, tok_emb, None)
+            logits = logits[:, -1, :] / temperature
+            # optionally crop the logits to only the top k options
+            if top_k is not None:
+                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+                logits[logits < v[:, [-1]]] = -float('Inf')
+            # apply softmax to convert logits to (normalized) probabilities
+            probs = F.softmax(logits, dim=-1)
+            # sample from the distribution
+            idx_next = torch.multinomial(probs, num_samples=1)
+            # append sampled index to the running sequence and continue
+            idx = torch.cat((idx, idx_next), dim=1)
+            tok_emb = self.gpt.transformer.wte(idx)
+            tok_emb[:, 1, :] = img_id
+
+        return idx
 
 
 
