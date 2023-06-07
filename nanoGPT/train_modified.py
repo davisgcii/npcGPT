@@ -29,6 +29,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 
 from model import GPTConfig, GPT, npcGPT
+from fairseq import optim
 
 # -----------------------------------------------------------------------------
 # default config values designed to train a gpt2 (124M) on OpenWebText
@@ -57,6 +58,7 @@ dropout = 0.5 # for pretraining 0 is good, for finetuning try 0.1+
 bias = False # do we use bias inside LayerNorm and Linear layers?
 vit_dim = 1000
 # adamw optimizer
+use_adafactor = True
 learning_rate = 6e-5 # max learning rate
 max_iters = 600000 # total number of training iterations
 weight_decay = 1e-1
@@ -253,7 +255,22 @@ scaler = torch.cuda.amp.GradScaler(enabled=(dtype == 'float16'))
 
 # optimizer
 # TODO: might not work
-optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
+if not use_adafactor:
+    optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
+else:
+    print("Using adafactor optimizer...")
+    opt_hps: dict = dict(
+            lr=None,
+            eps=(1e-30, 1e-3),
+            clip_threshold=1.0,
+            decay_rate=-0.8,
+            beta1=None,
+            weight_decay=0,
+            scale_parameter=True,
+            relative_step=True,
+            warmup_init=False,
+        )
+    optimizer = optim.adafactor.Adafactor(params=model.parameters(), **opt_hps)
 if init_from == 'resume':
     optimizer.load_state_dict(checkpoint['optimizer'])
 checkpoint = None # free up memory
@@ -355,8 +372,9 @@ while True:
 
     # determine and set the learning rate for this iteration
     lr = get_lr(iter_num) if decay_lr else learning_rate
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
+    if not use_adafactor:
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
 
     # evaluate the loss on train/val sets and write checkpoints
     if iter_num % eval_interval == 0 and master_process:
